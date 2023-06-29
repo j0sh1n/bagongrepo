@@ -14,13 +14,18 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.widget.Toast;
 
-import com.example.lookbackapp.Model.History;
+import com.google.android.gms.auth.api.signin.internal.Storage;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
@@ -39,10 +44,16 @@ public class userQrScannerActivity extends AppCompatActivity {
     private FirebaseDatabase fbDb;
     private DatabaseReference dbRef;
 
+    SessionManager sessionManager;
+    String id;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_qr_scanner);
+
+        sessionManager = new SessionManager(getApplicationContext());
+        id = sessionManager.getID();
 
         fAuth   = FirebaseAuth.getInstance();
         fbDb    = FirebaseDatabase.getInstance("https://lookbackapp-2a576-default-rtdb.asia-southeast1.firebasedatabase.app/");
@@ -67,9 +78,10 @@ public class userQrScannerActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         dbRef = fbDb.getReference("Users");
-        String userId = fAuth.getCurrentUser().getUid();
+        String userId = id;
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode,resultCode,data);
         String managementId = result.getContents();
+
         SimpleDateFormat formatter  = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
         SimpleDateFormat formatter2 = new SimpleDateFormat("dd MM yyyy");
         Date date                   = new Date();
@@ -81,6 +93,7 @@ public class userQrScannerActivity extends AppCompatActivity {
                 startActivity(new Intent(userQrScannerActivity.this,userHistoryActivity.class));
             }else{
                 DatabaseReference dbUserHistoryDates = fbDb.getReference("Users").child(userId).child("HistoryDates").child(time2).child("list");
+                String finalManagementId1 = managementId;
                 dbUserHistoryDates.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -90,18 +103,18 @@ public class userQrScannerActivity extends AppCompatActivity {
                             int i = 1;
                             int length = dataArray.length;
                             for (String x : dataArray){
-                                if (!managementId.equals(x)){
+                                if (!finalManagementId1.equals(x)){
                                     if (i != length){
                                         i++;
                                     }else {
                                         String value = snapshot.getValue().toString();
-                                        String value2 = value + " " + managementId;
+                                        String value2 = value + " " + finalManagementId1;
                                         dbUserHistoryDates.setValue(value2);
                                     }
                                 }
                             }
                         }else{
-                            dbUserHistoryDates.setValue(managementId);
+                            dbUserHistoryDates.setValue(finalManagementId1);
                         }
                     }
                     @Override
@@ -185,11 +198,14 @@ public class userQrScannerActivity extends AppCompatActivity {
                     }
                 }, 1000);
             }
-        }else{
+        }else {
+
             Toast.makeText(this, "Blank", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(userQrScannerActivity.this, userHistoryActivity.class));
+
         }
     }
+
 
     private boolean checkPermission(String permission){
         int result = ContextCompat.checkSelfPermission(userQrScannerActivity.this, permission);

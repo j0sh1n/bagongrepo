@@ -1,4 +1,4 @@
-package com.example.lookbackapp.Model;
+package com.example.lookbackapp;
 
 public class User {
     private String email;

@@ -28,7 +28,7 @@ import java.util.Date;
 
 public class loginActivity extends AppCompatActivity {
 
-    private TextView            txtRegister;
+    private TextView            txtRegister, txt_forgotPassword;
     private Button              btnUser, btnLogin, btnManagement;
     private Boolean             management;
     private EditText            txtemail, txtpass;
@@ -36,10 +36,27 @@ public class loginActivity extends AppCompatActivity {
     private DatabaseReference   dbRef;
     private FirebaseAuth        fAuth;
 
+    SessionManager sessionManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        sessionManager = new SessionManager(this);
+
+        if (sessionManager.isLoggedIn()){
+            String type = sessionManager.getType();
+            if (type.equals("user")){
+                Intent intent = new Intent(getApplicationContext(), userHistoryActivity.class);
+                startActivity(intent);
+                finish();
+            }else{
+                processManagementLogin();
+                Intent intent = new Intent(getApplicationContext(), managementQrCodeActivity.class);
+                startActivity(intent);
+            }
+        }
 
         fbDb            = FirebaseDatabase.getInstance("https://lookbackapp-2a576-default-rtdb.asia-southeast1.firebasedatabase.app/");
         fAuth           = FirebaseAuth.getInstance();
@@ -51,6 +68,7 @@ public class loginActivity extends AppCompatActivity {
         txtRegister     = (TextView) findViewById(R.id.clickRegister);
         txtemail        = (EditText) findViewById(R.id.editTextEmail);
         txtpass         = (EditText) findViewById(R.id.editTextPassword);
+        txt_forgotPassword = findViewById(R.id.txt_forgotPassword);
 
         fAuth.signOut();
         btnUser.setAlpha(.5f);
@@ -110,6 +128,14 @@ public class loginActivity extends AppCompatActivity {
                 }
             }
         });
+
+        txt_forgotPassword.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(loginActivity.this, Activity_ForgotPassword.class);
+                startActivity(intent);
+            }
+        });
     }
 
     public void signIn(String email, String pass, DatabaseReference dbRefLogin){
@@ -118,61 +144,81 @@ public class loginActivity extends AppCompatActivity {
             public void onComplete(@NonNull Task<AuthResult> task) {
                 if(task.isSuccessful()){
                     String userID = fAuth.getCurrentUser().getUid();
-                    dbRefLogin.addListenerForSingleValueEvent(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot snapshot) {
-                            if(snapshot.child(userID).exists()){
-                                Toast.makeText(loginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
-                                if (management == false){
-                                    startActivity(new Intent(getApplicationContext(),userHistoryActivity.class));
-                                }else {
-                                    SimpleDateFormat formatter  = new SimpleDateFormat("dd/MM/yyyy");
-                                    Date date                   = new Date();
-                                    String time                 = formatter.format(date);
-                                    fbDb                        = FirebaseDatabase.getInstance("https://lookbackapp-2a576-default-rtdb.asia-southeast1.firebasedatabase.app/");
-                                    fAuth                       = FirebaseAuth.getInstance();
-                                    String userID               = fAuth.getCurrentUser().getUid();
-                                    dbRef                       = fbDb.getReference("Management").child(userID);
-                                    dbRef.addValueEventListener(new ValueEventListener() {
-                                        @Override
-                                        public void onDataChange(@NonNull DataSnapshot snapshot) {
-                                            String time2 = snapshot.child("date").getValue().toString();
-                                            if (!(time2.equals(time))){
-                                                dbRef.child("date").setValue(time);
-                                                dbRef.child("checkIns").setValue(0);
-                                                dbRef.child("daysWithoutCovid").addListenerForSingleValueEvent(new ValueEventListener() {
-                                                    @Override
-                                                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                                                        int value = Integer.parseInt(snapshot.getValue().toString());
-                                                        value++;
-                                                        dbRef.child("daysWithoutCovid").setValue(value);
-                                                    }
-                                                    @Override
-                                                    public void onCancelled(@NonNull DatabaseError error) {
-                                                    }
-                                                });
-                                            }
-                                        }
-                                        @Override
-                                        public void onCancelled(@NonNull DatabaseError error) {
-                                        }
-                                    });
-                                    startActivity(new Intent(getApplicationContext(),managementQrCodeActivity.class));
+                    if (fAuth.getCurrentUser().isEmailVerified()) {
+                        dbRefLogin.addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                if (snapshot.child(userID).exists()) {
+                                    Toast.makeText(loginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
+
+                                    //check type
+                                    String type = management ? "management" : "user";
+                                    sessionManager.createLoginSession(userID, pass, email, type); //create session
+
+                                    if (management == false) {
+                                        startActivity(new Intent(getApplicationContext(), userHistoryActivity.class));
+                                    } else {
+                                        processManagementLogin();
+                                        startActivity(new Intent(getApplicationContext(), managementQrCodeActivity.class));
+                                    }
+                                } else {
+                                    Toast.makeText(loginActivity.this, "Invalid Account", Toast.LENGTH_SHORT).show();
+                                    fAuth.getInstance().signOut();
                                 }
-                            }else{
-                                Toast.makeText(loginActivity.this, "Invalid Account", Toast.LENGTH_SHORT).show();
-                                fAuth.getInstance().signOut();
                             }
-                        }
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError error) {
-                        }
-                    });
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
+                            }
+                        });
+
+                    }else{
+                        Toast.makeText(getApplicationContext(), "Please verify your email.", Toast.LENGTH_LONG).show();
+                    }
+
                 }else{
                     Toast.makeText(loginActivity.this, task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
         });
+    }
+
+    private void processManagementLogin() {
+
+        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+        Date date = new Date();
+        String time = formatter.format(date);
+        fbDb = FirebaseDatabase.getInstance("https://lookbackapp-2a576-default-rtdb.asia-southeast1.firebasedatabase.app/");
+        fAuth = FirebaseAuth.getInstance();
+        String userID = sessionManager.getID();
+        dbRef = fbDb.getReference("Management").child(userID);
+        dbRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                String time2 = snapshot.child("date").getValue().toString();
+                if (!(time2.equals(time))) {
+                    dbRef.child("date").setValue(time);
+                    dbRef.child("checkIns").setValue(0);
+                    dbRef.child("daysWithoutCovid").addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            int value = Integer.parseInt(snapshot.getValue().toString());
+                            value++;
+                            dbRef.child("daysWithoutCovid").setValue(value);
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+            }
+        });
+
     }
 
     @Override

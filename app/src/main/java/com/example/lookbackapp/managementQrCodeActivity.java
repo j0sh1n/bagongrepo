@@ -33,17 +33,22 @@ public class managementQrCodeActivity extends AppCompatActivity {
     FirebaseDatabase fb = FirebaseDatabase.getInstance("https://lookbackapp-2a576-default-rtdb.asia-southeast1.firebasedatabase.app/");
     DatabaseReference db = fb.getReference("Management");
 
+    SessionManager sessionManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_management_qr_code);
+
+        sessionManager = new SessionManager(this);
+        startService(new Intent(managementQrCodeActivity.this, BackGroundService.class));
 
         checkIns    = (TextView) findViewById(R.id.managementCheckIn);
         name        = (TextView) findViewById(R.id.managementName);
         address     = (TextView) findViewById(R.id.managementAddress);
         days        = (TextView) findViewById(R.id.managementDays);
         fAuth       = FirebaseAuth.getInstance();
-        qrCodeId    = fAuth.getCurrentUser().getUid();
+        qrCodeId    = sessionManager.getID();
         qrCode      = findViewById(R.id.qrCode);
         refresh     = (Button) findViewById(R.id.buttonRefresh);
         logout      = (Button) findViewById(R.id.buttonLogout);
@@ -91,7 +96,9 @@ public class managementQrCodeActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 fAuth.signOut();
+                sessionManager.logout();
                 startActivity(new Intent(managementQrCodeActivity.this, loginActivity.class));
+                finish();
                 Toast.makeText(managementQrCodeActivity.this, "Logged out successfully", Toast.LENGTH_SHORT).show();
             }
         });
