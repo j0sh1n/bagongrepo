@@ -14,118 +14,12 @@
         android:text="HISTORY"
         android:textColor="@color/black"
         android:textSize="30dp"
-        android:textStyle="bold"
-        android:id="@+id/labelHistory"/>
+        android:textStyle="bold" />
 
     <RelativeLayout
-        android:id="@+id/parentLayoutSearch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="50dp"
-        android:layout_alignTop="@id/labelHistory"
-        android:layout_centerHorizontal="true">
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/layoutSearch">
-
-            <TextView
-                android:id="@+id/labelSearch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Search : "
-                android:textColor="@color/black"
-                android:textSize="20dp"
-                android:textStyle="bold" />
-
-            <EditText
-                android:id="@+id/editTextSearch"
-                android:layout_width="200dp"
-                android:layout_height="match_parent"
-                android:background="@drawable/rounded_edittext"
-                android:inputType="text"
-                android:maxLines="1"></EditText>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/layoutFilter"
-            android:visibility="invisible">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="From - To : "
-                android:textSize="20dp"
-                android:textColor="@color/black"
-                android:textStyle="bold"
-                android:id="@+id/labelFilter"/>
-
-            <EditText
-                android:layout_width="100dp"
-                android:layout_height="match_parent"
-                android:background="@drawable/rounded_edittext"
-                android:id="@+id/editTextFrom"
-                android:maxLines="1"
-                android:textSize="15dp"
-                android:inputType="text"
-                >
-            </EditText>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=" - "
-                android:textSize="20dp"
-                android:textColor="@color/black"
-                android:textStyle="bold"
-                android:id="@+id/labelDash"/>
-            <EditText
-                android:textSize="15dp"
-                android:layout_width="100dp"
-                android:layout_height="match_parent"
-                android:background="@drawable/rounded_edittext"
-                android:id="@+id/editTextTo"
-                android:maxLines="1"
-                android:inputType="text"
-                >
-            </EditText>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true">
-            <Button
-                android:id="@+id/btnSearch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerHorizontal="true"
-                android:layout_marginTop="30dp"
-                android:text="SEARCH"
-                android:textStyle="bold">
-            </Button>
-            <ImageView
-                android:alpha=".5"
-                android:id="@+id/filterBtn"
-                android:layout_marginTop="35dp"
-                android:layout_marginLeft="10dp"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/rectanglebutton"
-                android:clickable="true"
-                android:src="@drawable/filter"/>
-        </LinearLayout>
-    </RelativeLayout>
-
-    <RelativeLayout
-        android:layout_centerInParent="true"
         android:layout_width="match_parent"
-        android:layout_height="400dp"
-        android:layout_alignTop="@id/parentLayoutSearch"
-        android:layout_marginTop="100dp"
-        >
+        android:layout_height="500dp"
+        android:layout_centerInParent="true">
 
         <ListView
             android:id="@+id/listViewHistory"
@@ -135,19 +29,7 @@
 
     </RelativeLayout>
 
-    <Button
-        android:id="@+id/printToPdfBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="95dp"
-        android:text="EXPORT TO PDF">
-    </Button>
-
-
     <TextView
-        android:id="@+id/bottomBar"
         android:layout_width="match_parent"
         android:layout_height="80dp"
         android:layout_alignParentBottom="true"

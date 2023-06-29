@@ -5,15 +5,16 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.example.lookbackapp.Model.Management;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.ActionCodeSettings;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
@@ -63,7 +64,7 @@ public class managementRegisterActivity extends AppCompatActivity {
                 bterms  = terms.isChecked();
                 bpriv   = priv.isChecked();
                 if(checkfields(sorg, sadd, semail, spass, sconf, bterms, bpriv)){
-                    register(semail, spass, sorg, sadd);
+                    registration(semail, spass, sorg, sadd);
                 }
             }
         });
@@ -88,26 +89,62 @@ public class managementRegisterActivity extends AppCompatActivity {
         }
     }
 
-    private void register(String remail, String rpass, String rorg, String radd){
+//    private void register(String remail, String rpass, String rorg, String radd){
+//        fAuth.createUserWithEmailAndPassword(remail, rpass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+//            @Override
+//            public void onComplete(@NonNull Task<AuthResult> task) {
+//                if(task.isSuccessful()){
+//                    String user;
+//                    user = fAuth.getCurrentUser().getUid();
+//                    SimpleDateFormat formatter  = new SimpleDateFormat("dd/MM/yyyy");
+//                    Date date                   = new Date();
+//                    String time                 = formatter.format(date);
+//                    management.setName(rorg);
+//                    management.setEmail(remail);
+//                    management.setPass(rpass);
+//                    management.setAddress(radd);
+//                    management.setCheckIns(0);
+//                    management.setDate(time);
+//                    management.setDaysWithoutCovid(0);
+//                    dbRef.child(user).setValue(management);
+//                    Toast.makeText(managementRegisterActivity.this, "Registration Successful!", Toast.LENGTH_SHORT).show();
+//                    startActivity(new Intent(managementRegisterActivity.this, loginActivity.class));
+//                }else {
+//                    Toast.makeText(managementRegisterActivity.this, task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        });
+//    }
+
+    private void registration(String remail, String rpass, String rorg, String radd){
         fAuth.createUserWithEmailAndPassword(remail, rpass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
                 if(task.isSuccessful()){
-                    String user;
-                    user = fAuth.getCurrentUser().getUid();
-                    SimpleDateFormat formatter  = new SimpleDateFormat("dd/MM/yyyy");
-                    Date date                   = new Date();
-                    String time                 = formatter.format(date);
-                    management.setName(rorg);
-                    management.setEmail(remail);
-                    management.setPass(rpass);
-                    management.setAddress(radd);
-                    management.setCheckIns(0);
-                    management.setDate(time);
-                    management.setDaysWithoutCovid(0);
-                    dbRef.child(user).setValue(management);
-                    Toast.makeText(managementRegisterActivity.this, "Registration Successful!", Toast.LENGTH_SHORT).show();
-                    startActivity(new Intent(managementRegisterActivity.this, loginActivity.class));
+                    String uid = fAuth.getCurrentUser().getUid();
+                    //send email verification
+                    fAuth.getCurrentUser().sendEmailVerification().addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            if (task.isSuccessful()){
+                                SimpleDateFormat formatter  = new SimpleDateFormat("dd/MM/yyyy");
+                                Date date                   = new Date();
+                                String time                 = formatter.format(date);
+                                management.setName(rorg);
+                                management.setEmail(remail);
+                                management.setPass(rpass);
+                                management.setAddress(radd);
+                                management.setCheckIns(0);
+                                management.setDate(time);
+                                management.setDaysWithoutCovid(0);
+                                dbRef.child(uid).setValue(management);
+                                Toast.makeText(managementRegisterActivity.this, "Registration Successful! Please verify your email address.", Toast.LENGTH_SHORT).show();
+
+                                startActivity(new Intent(managementRegisterActivity.this, loginActivity.class));
+                            }
+                        }
+                    });
+
                 }else {
                     Toast.makeText(managementRegisterActivity.this, task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                 }

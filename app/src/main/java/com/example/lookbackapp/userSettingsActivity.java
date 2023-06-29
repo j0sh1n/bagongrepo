@@ -21,6 +21,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 
 import java.text.SimpleDateFormat;
@@ -28,6 +29,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 
 public class userSettingsActivity extends AppCompatActivity {
 
@@ -41,10 +43,15 @@ public class userSettingsActivity extends AppCompatActivity {
     private AlertDialog.Builder builder;
     private String userId, covPosCheck;
 
+    SessionManager sessionManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_settings);
+
+
+        sessionManager = new SessionManager(this);
 
         email           = (EditText) findViewById(R.id.editTextEmailAddress);
         lname           = (EditText) findViewById(R.id.editTextLastName);
@@ -58,7 +65,7 @@ public class userSettingsActivity extends AppCompatActivity {
         userQrScanBtn   = (ImageView) findViewById(R.id.btnTarget);
         userHistoryBtn  = (ImageView) findViewById(R.id.btnMap);
         covStat         = (Switch) findViewById(R.id.covPosSwitch);
-        userId          = fAuth.getUid();
+        userId          = sessionManager.getID();
         builder         = new AlertDialog.Builder(this);
         userNotifBtn    = (ImageView) findViewById(R.id.btnStat);
 
@@ -96,7 +103,7 @@ public class userSettingsActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if(covStat.isChecked()) {
                     builder.setTitle("ALERT!").setMessage("By clicking this switch, you are setting your account as covid positive, the system will notify all" +
-                            " users who logged in on places you logged in the past two week, Are you sure you want to turn this switch on?")
+                                    " users who logged in on places you logged in the past two week, Are you sure you want to turn this switch on?")
                             .setCancelable(false)
                             .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                                 @Override
@@ -145,8 +152,10 @@ public class userSettingsActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 fAuth.signOut();
+                sessionManager.logout();
                 startActivity(new Intent(userSettingsActivity.this, loginActivity.class));
                 Toast.makeText(userSettingsActivity.this, "Logged out successfully", Toast.LENGTH_SHORT).show();
+                finish();
             }
         });
 
@@ -168,6 +177,7 @@ public class userSettingsActivity extends AppCompatActivity {
                     if(snapshot.exists()){
                         String data = snapshot.getValue().toString();
                         dataAnalyzer(data, Sdate);
+                        forNotification();
                     }
                 }
                 @Override
@@ -175,6 +185,49 @@ public class userSettingsActivity extends AppCompatActivity {
                 }
             });
         }
+    }
+
+    //create covid positive data
+    private void forNotification() {
+        SimpleDateFormat formatter = new SimpleDateFormat("dd MM yyyy");
+        Date date = new Date();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        String Sdate = formatter.format(calendar.getTime());
+
+        final String[] ids = {""};
+
+        // get visited establishments
+        DatabaseReference db_list = fbDb.getReference("Users/" + userId + "/HistoryDates/" + Sdate);
+        db_list.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.child("list").exists()){
+
+                    String id = (String) snapshot.child("list").getValue();
+
+                    DatabaseReference db = fbDb.getReference("CovidPositive/" + Sdate);
+                    HashMap<String, Object> hashMap_data = new HashMap<>();
+                    hashMap_data.put("status_change", "positive");
+                    hashMap_data.put("timestamp", ServerValue.TIMESTAMP);
+                    hashMap_data.put("visited", id);
+                    HashMap<String, Object> hashMap_key = new HashMap<>();
+                    HashMap<String, Object> hashMap_date = new HashMap<>();
+                    hashMap_key.put(userId, hashMap_data);
+                    db.updateChildren(hashMap_key);//create new covid positive data
+
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+
+
+
+
     }
 
     int manCount;
@@ -217,16 +270,17 @@ public class userSettingsActivity extends AppCompatActivity {
     //TODO
     public void putInDbNotif(String data2){
         String[] data = data2.split("!");
-        System.out.println(data2);
+
         for(String x : data){
             String date = x.substring(0,10);
             String userId = x.substring(11,39);
             String managementId = x.substring(40, 68);
+
             DatabaseReference dbRefNotification = fbDb.getReference("Users").child(userId).child("Notifications").child(date).child("list");
             dbRefNotification.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    System.out.println(x);
+
                     String taskVal = String.valueOf(snapshot.getValue());
                     if (taskVal.equals("null")){
                         String pushVal = dbRefNotification.push().getKey();

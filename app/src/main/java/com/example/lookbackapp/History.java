@@ -1,9 +1,10 @@
-package com.example.lookbackapp.Model;
+package com.example.lookbackapp;
 
 public class History {
 
     public String time;
     public String name;
+
     public String getTime() {
         return time;
     }

@@ -32,14 +32,21 @@ public class userNotificationActivity extends AppCompatActivity {
     ArrayList<String> notifList = new ArrayList<>();
     FirebaseAuth fAuth = FirebaseAuth.getInstance();
     FirebaseDatabase fbDb = FirebaseDatabase.getInstance("https://lookbackapp-2a576-default-rtdb.asia-southeast1.firebasedatabase.app/");
-    DatabaseReference dbRefUser = fbDb.getReference("Users").child(fAuth.getCurrentUser().getUid());
-    DatabaseReference dbRefManagement = fbDb.getReference("Management");
+    DatabaseReference dbRefUser;
+    DatabaseReference dbRefManagement;
     int z = 0;
+
+    SessionManager sessionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_notification);
+
+        sessionManager = new SessionManager(this);
+
+        dbRefUser = fbDb.getReference("Users").child(sessionManager.getID());
+        dbRefManagement = fbDb.getReference("Management");
 
         btnMap          = (ImageView) findViewById(R.id.btnMap);
         btnTarget       = (ImageView) findViewById(R.id.btnTarget);

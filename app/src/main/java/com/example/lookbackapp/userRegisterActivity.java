@@ -12,9 +12,9 @@ import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.Toast;
 
-import com.example.lookbackapp.Model.User;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.ActionCodeSettings;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
@@ -23,11 +23,11 @@ import com.google.firebase.database.FirebaseDatabase;
 public class userRegisterActivity extends AppCompatActivity {
 
     EditText            txtEmail, txtPassword, txtConfirmPass, txtLName, txtFName, txtAddress, txtCompany, txtEmployment;
-    RadioButton         radioMale, radioFemale;
+    RadioButton radioMale, radioFemale;
     String              semail, spass, sconf, slname, sfname, sgender, saddress, scompany, semployment;
     Button              btnRegister;
     CheckBox            cbTerms, cbPrivacy;
-    User user;
+    User                user;
     FirebaseAuth        fAuth;
     FirebaseDatabase    fbDb;
     DatabaseReference   dbRef;
@@ -94,24 +94,52 @@ public class userRegisterActivity extends AppCompatActivity {
         }
     }
 
+//    private void registration(String remail, String rpass){
+//        fAuth.createUserWithEmailAndPassword(remail, rpass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+//            @Override
+//            public void onComplete(@NonNull Task<AuthResult> task) {
+//                if(task.isSuccessful()){
+//                    String uid = fAuth.getCurrentUser().getUid();
+//                    user.setEmail(remail);
+//                    user.setPass(rpass);
+//                    user.setCovStat("NEGATIVE");
+//                    dbRef.child(uid).setValue(user);
+//                    Toast.makeText(userRegisterActivity.this, "Registration Successful!", Toast.LENGTH_SHORT).show();
+//                    startActivity(new Intent(getApplicationContext(),loginActivity.class));
+//                }else {
+//                    Toast.makeText(userRegisterActivity.this, task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        });
+//    }
+
     private void registration(String remail, String rpass, String rlname, String rfname, String rgender, String raddress, String rcompany, String remployment){
         fAuth.createUserWithEmailAndPassword(remail, rpass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
                 if(task.isSuccessful()){
                     String uid = fAuth.getCurrentUser().getUid();
-                    user.setEmail(remail);
-                    user.setPass(rpass);
-                    user.setLname(rlname);
-                    user.setFname(rfname);
-                    user.setGender(rgender);
-                    user.setAddress(raddress);
-                    user.setCompany(rcompany);
-                    user.setEmployment(remployment);
-                    user.setCovStat("NEGATIVE");
-                    dbRef.child(uid).setValue(user);
-                    Toast.makeText(userRegisterActivity.this, "Registration Successful!", Toast.LENGTH_SHORT).show();
-                    startActivity(new Intent(getApplicationContext(),loginActivity.class));
+                    //send email verification
+                    fAuth.getCurrentUser().sendEmailVerification().addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            if (task.isSuccessful()){
+                                user.setEmail(remail);
+                                user.setPass(rpass);
+                                user.setLname(rlname);
+                                user.setFname(rfname);
+                                user.setGender(rgender);
+                                user.setAddress(raddress);
+                                user.setCompany(rcompany);
+                                user.setEmployment(remployment);
+                                user.setCovStat("NEGATIVE");
+                                dbRef.child(uid).setValue(user);
+                                Toast.makeText(userRegisterActivity.this, "Registration Successful! Please verify your email address.", Toast.LENGTH_SHORT).show();
+                                startActivity(new Intent(getApplicationContext(),loginActivity.class));
+                            }
+                        }
+                    });
+
                 }else {
                     Toast.makeText(userRegisterActivity.this, task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                 }
